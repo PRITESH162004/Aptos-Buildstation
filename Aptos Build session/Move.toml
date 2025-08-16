@@ -1,0 +1,62 @@
+module MyModule::MentorshipBadges {
+
+    use aptos_framework::signer;
+    use aptos_framework::object;
+    use aptos_framework::string::{Self, String};
+    use aptos_framework::timestamp;
+
+    /// Struct representing a mentorship badge
+    struct Badge has store, key, object {
+        id: object::Object<T>,
+        name: String,
+        description: String,
+        awarded_by: address,
+        awarded_to: address,
+        awarded_at: u64,
+    }
+
+    /// Struct to track badge counts per user
+    struct BadgeCount has store, key {
+        total_badges: u64,
+    }
+
+    /// Function to award a badge from mentor to mentee
+    public fun award_badge(
+        mentor: &signer,
+        mentee: address,
+        badge_name: String,
+        badge_description: String
+    ) {
+        let mentor_addr = signer::address_of(mentor);
+        
+        // Create a new badge
+        let badge = Badge {
+            id: object::create_object(mentor_addr),
+            name: badge_name,
+            description: badge_description,
+            awarded_by: mentor_addr,
+            awarded_to: mentee,
+            awarded_at: timestamp::now_seconds(),
+        };
+
+        // Move the badge to the mentee's account
+        move_to(mentee, badge);
+
+        // Update badge count for mentee
+        if (!exists<BadgeCount>(mentee)) {
+            move_to(mentee, BadgeCount { total_badges: 0 });
+        };
+        
+        let badge_count = borrow_global_mut<BadgeCount>(mentee);
+        badge_count.total_badges = badge_count.total_badges + 1;
+    }
+
+    /// Function to get the total number of badges for a user
+    public fun get_badge_count(user: address): u64 {
+        if (exists<BadgeCount>(user)) {
+            *&borrow_global<BadgeCount>(user).total_badges
+        } else {
+            0
+        }
+    }
+}

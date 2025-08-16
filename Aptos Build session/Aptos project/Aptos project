@@ -1,0 +1,25 @@
+module MyModule::MentorshipBadges {
+
+    use aptos_framework::signer;
+
+    /// Struct representing a mentorship badge
+    struct Badge has key, store {
+        skill: vector<u8>,   // Skill name
+        mentor: address,     // Mentor who issued the badge
+    }
+
+    /// Function: Mentor creates a badge for a mentee
+    public fun create_badge(mentor: &signer, mentee: address, skill: vector<u8>) {
+        let badge = Badge {
+            skill,
+            mentor: signer::address_of(mentor),
+        };
+        move_to(&mentee, badge);
+    }
+
+    /// Function: Retrieve badge details for a mentee
+    public fun get_badge(mentee: address): (vector<u8>, address) acquires Badge {
+        let badge = borrow_global<Badge>(mentee);
+        (badge.skill, badge.mentor)
+    }
+}
